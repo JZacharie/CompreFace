@@ -10,7 +10,7 @@ Add this repository to Helm.
 helm repo add JZacharie https://JZacharie.github.io/HelmCompreFace
 ```
 
-Install an example.
+Install an example2.
 
 ```
 helm install CompreFace JZacharie/CompreFace
