@@ -13,5 +13,5 @@ helm repo add JZacharie https://JZacharie.github.io/HelmCompreFace
 Install an example.
 
 ```
-helm install CompreFace JZacharie/hello-world
+helm install CompreFace JZacharie/CompreFace
 ```

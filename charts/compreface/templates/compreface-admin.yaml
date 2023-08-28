@@ -1,0 +1,163 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: compreface-admin
+spec:
+  replicas: 1  # Adjust the number of replicas as needed
+  selector:
+    matchLabels:
+      app: compreface-admin
+  template:
+    metadata:
+      labels:
+        app: compreface-admin
+    spec:
+      containers:
+        - name: compreface-admin
+          image: {{ .Values.registry }}compreface-admin:{{ .Values.ADMIN_VERSION }}
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres_username }}
+            - name: POSTGRES_PASSWORD
+              value: {{ .Values.postgres_password }}
+            - name: POSTGRES_URL
+              value: jdbc:postgresql://{{ .Values.postgres_domain }}:{{ .Values.postgres_port }}/{{ .Values.postgres_db }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+            - name: ENABLE_EMAIL_SERVER
+              value: {{ .Values.enable_email_server }}
+            - name: EMAIL_HOST
+              value: {{ .Values.email_host }}
+            - name: EMAIL_USERNAME
+              value: {{ .Values.email_username }}
+            - name: EMAIL_FROM
+              value: {{ .Values.email_from }}
+            - name: EMAIL_PASSWORD
+              value: {{ .Values.email_password }}
+            - name: ADMIN_JAVA_OPTS
+              value: {{ .Values.compreface_admin_java_options }}
+            - name: MAX_FILE_SIZE
+              value: {{ .Values.max_file_size }}
+            - name: MAX_REQUEST_SIZE
+              value: {{ .Values.max_request_size }}B
+          ports:
+            - containerPort: 80  # Adjust the port number as needed
+          dependsOn:
+            - name: compreface-postgres-db
+            - name: compreface-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: compreface-api
+spec:
+  replicas: 1  # Adjust the number of replicas as needed
+  selector:
+    matchLabels:
+      app: compreface-api
+  template:
+    metadata:
+      labels:
+        app: compreface-api
+    spec:
+      containers:
+        - name: compreface-api
+          image: {{ .Values.registry }}compreface-api:{{ .Values.API_VERSION }}
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres_username }}
+            - name: POSTGRES_PASSWORD
+              value: {{ .Values.postgres_password }}
+            - name: POSTGRES_URL
+              value: jdbc:postgresql://{{ .Values.postgres_domain }}:{{ .Values.postgres_port }}/{{ .Values.postgres_db }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+            - name: API_JAVA_OPTS
+              value: {{ .Values.compreface_api_java_options }}
+            - name: SAVE_IMAGES_TO_DB
+              value: {{ .Values.save_images_to_db }}
+            - name: MAX_FILE_SIZE
+              value: {{ .Values.max_file_size }}
+            - name: MAX_REQUEST_SIZE
+              value: {{ .Values.max_request_size }}B
+            - name: CONNECTION_TIMEOUT
+              value: {{ .Values.connection_timeout | default "10000" }}
+            - name: READ_TIMEOUT
+              value: {{ .Values.read_timeout | default "60000" }}
+          dependsOn:
+            - name: compreface-postgres-db
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: compreface-fe
+spec:
+  replicas: 1  # Adjust the number of replicas as needed
+  selector:
+    matchLabels:
+      app: compreface-fe
+  template:
+    metadata:
+      labels:
+        app: compreface-fe
+    spec:
+      containers:
+        - name: compreface-fe
+          image: {{ .Values.registry }}compreface-fe:{{ .Values.FE_VERSION }}
+          ports:
+            - containerPort: 80  # The port inside the container
+          env:
+            - name: CLIENT_MAX_BODY_SIZE
+              value: {{ .Values.max_request_size }}
+            - name: PROXY_READ_TIMEOUT
+              value: {{ .Values.read_timeout | default "60000" }}ms
+            - name: PROXY_CONNECT_TIMEOUT
+              value: {{ .Values.connection_timeout | default "10000" }}ms
+          dependsOn:
+            - name: compreface-api
+            - name: compreface-admin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: compreface-core
+spec:
+  replicas: 1  # Adjust the number of replicas as needed
+  selector:
+    matchLabels:
+      app: compreface-core
+  template:
+    metadata:
+      labels:
+        app: compreface-core
+    spec:
+      containers:
+        - name: compreface-core
+          image: {{ .Values.registry }}compreface-core:{{ .Values.CORE_VERSION }}
+          env:
+            - name: ML_PORT
+              value: "3000"
+            - name: IMG_LENGTH_LIMIT
+              value: {{ .Values.max_detect_size }}
+            - name: UWSGI_PROCESSES
+              value: {{ .Values.uwsgi_processes | default "2" }}
+            - name: UWSGI_THREADS
+              value: {{ .Values.uwsgi_threads | default "1" }}
+          ports:
+            - containerPort: 3000
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3

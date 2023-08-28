@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: compreface-postgres-db
+spec:
+  selector:
+    app: compreface-postgres-db
+  ports:
+    - protocol: TCP
+      port: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: compreface-postgres-db
+spec:
+  replicas: 1  # Adjust the number of replicas as needed
+  selector:
+    matchLabels:
+      app: compreface-postgres-db
+  template:
+    metadata:
+      labels:
+        app: compreface-postgres-db
+    spec:
+      containers:
+        - name: compreface-postgres-db
+          image: {{ .Values.registry }}compreface-postgres-db:{{ .Values.POSTGRES_VERSION }}
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres_username }}
+            - name: POSTGRES_PASSWORD
+              value: {{ .Values.postgres_password }}
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres_db }}
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: postgres-data
+          emptyDir: {}  # You can replace this with a PersistentVolumeClaim if needed
