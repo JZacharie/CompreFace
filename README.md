@@ -1,17 +1,17 @@
-# Helm Example Repository
+# Helm CompreFace Repository
 
-Ahoy world!  I'm a Helm repository for example charts.
+Ahoy world!  I'm a Helm repository for CompreFace charts.
 
 ## Get started
 
 Add this repository to Helm.
 
 ```
-helm repo add examples https://helm.github.io/examples
+helm repo add JZacharie https://JZacharie.github.io/HelmCompreFace
 ```
 
 Install an example.
 
 ```
-helm install ahoy examples/hello-world
+helm install CompreFace JZacharie/HelmCompreFace
 ```
